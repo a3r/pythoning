@@ -64,11 +64,11 @@ ship_image = simplegui.load_image(ASSETS_PATH + "lathrop/double_ship.png")
 
 # missile image - shot1.png, shot2.png, shot3.png
 missile_info = ImageInfo([5,5], [10, 10], 3, 50)
-missile_image = simplegui.load_image(ASSETS_PATH + "lathrop/shot2.png")
+missile_image = simplegui.load_image(ASSETS_PATH + "lathrop/shot1.png")
 
 # asteroid images - asteroid_blue.png, asteroid_brown.png, asteroid_blend.png
 asteroid_info = ImageInfo([45, 45], [90, 90], 40)
-asteroid_image = simplegui.load_image(ASSETS_PATH + "lathrop/asteroid_blue.png")
+asteroid_image = simplegui.load_image(ASSETS_PATH + "lathrop/asteroid_blend.png")
 
 # animated explosion - explosion_orange.png, explosion_blue.png, explosion_blue2.png, explosion_alpha.png
 explosion_info = ImageInfo([64, 64], [128, 128], 17, 24, True)
@@ -100,9 +100,18 @@ class Sprite:
             sound.play()
    
     def draw(self, canvas):
-        canvas.draw_image(self.image, self.image_center, self.image_size, self.pos, self.image_size, self.angle)
-    
+        
+        if self.animated:
+            current_index = (self.age % 64) // 1
+            self.current_center = (self.image_center[0] + current_index * self.image_size[0],
+                              self.image_center[1])
+            canvas.draw_image(self.image, self.current_center, self.image_size, self.pos, self.image_size, self.angle)  
+            self.age += 1
+        else:
+            canvas.draw_image(self.image, self.image_center, self.image_size, self.pos, self.image_size, self.angle)  
+        
     def update(self):
+        
         self.angle += self.angle_vel
         self.pos[0] += self.vel[0]
         self.pos[1] += self.vel[1]
@@ -110,8 +119,8 @@ class Sprite:
         if self.lifespan:
             self.age += 1
             if self.age > self.lifespan:
-                return True
-            
+                return True 
+        
         self.fix_position()
 
     def fix_position(self):
@@ -125,6 +134,7 @@ class Sprite:
             self.pos[1] = 0
             
     def collide(self, other):
+        global explosion_group
         p = self.pos
         q = other.pos
         r1 = self.radius
@@ -132,6 +142,8 @@ class Sprite:
         
         distance = dist(p,q)
         if distance <= r1 + r2:
+            explosion = Sprite(p, [0, 0], 0, 0, explosion_image, explosion_info, explosion_sound)
+            explosion_group.add(explosion)
             return True
         else:
             return False
@@ -264,6 +276,7 @@ def draw(canvas):
     my_ship.draw(canvas)
     process_sprite_group(rock_group, canvas)
     process_sprite_group(missile_group, canvas)
+    process_sprite_group(explosion_group, canvas)
     my_ship.update()
     
     if not started:
@@ -331,6 +344,7 @@ frame = simplegui.create_frame("Asteroids", WIDTH, HEIGHT)
 my_ship = Ship([WIDTH / 2, HEIGHT / 2], [0.0, 0.0], 0, 0, ship_image, ship_info)
 rock_group = set([])
 missile_group = set([])
+explosion_group = set([])
 
 
 # register handlers
